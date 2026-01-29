@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -137,7 +138,9 @@ func handleChecksumFileVerification(filePath string, results *[]ChecksumFileVeri
 
 	fmt.Print("- ", fileAbsolutePath)
 
+	start := time.Now()
 	result := checkChecksumFile(fileAbsolutePath)
+	elapsed := time.Since(start)
 
 	*results = append(*results, result)
 
@@ -152,6 +155,9 @@ func handleChecksumFileVerification(filePath string, results *[]ChecksumFileVeri
 		fmt.Print(" ❌")
 	}
 
+	if result.Status != NotFound {
+		fmt.Printf(" (%s)", formatDuration(elapsed))
+	}
 	fmt.Println()
 
 	return nil

@@ -23,6 +23,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -136,7 +137,9 @@ func handleChecksumFileCreation(filePath string, results *[]ChecksumFileCreation
 
 	fmt.Print("- ", fileAbsolutePath)
 
+	start := time.Now()
 	result := createChecksumFile(fileAbsolutePath)
+	elapsed := time.Since(start)
 
 	*results = append(*results, result)
 
@@ -149,6 +152,9 @@ func handleChecksumFileCreation(filePath string, results *[]ChecksumFileCreation
 		fmt.Print(" ❌")
 	}
 
+	if result.Status != Existing {
+		fmt.Printf(" (%s)", formatDuration(elapsed))
+	}
 	fmt.Println()
 
 	return nil

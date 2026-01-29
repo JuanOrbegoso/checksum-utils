@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -67,4 +68,30 @@ func init() {
 func printHeader() {
 	fmt.Println("Checksum-Utils", version)
 	fmt.Println("https://github.com/JuanOrbegoso/checksum-utils")
+}
+
+func formatDuration(d time.Duration) string {
+	rounded := d.Round(time.Millisecond)
+
+	if rounded >= time.Hour {
+		totalSeconds := int64(rounded.Round(time.Second).Seconds())
+		hours := totalSeconds / 3600
+		minutes := (totalSeconds % 3600) / 60
+		seconds := totalSeconds % 60
+		return fmt.Sprintf("%dh%dm%ds", hours, minutes, seconds)
+	}
+
+	if rounded >= time.Minute {
+		totalSeconds := int64(rounded.Round(time.Second).Seconds())
+		minutes := totalSeconds / 60
+		seconds := totalSeconds % 60
+		return fmt.Sprintf("%dm%ds", minutes, seconds)
+	}
+
+	if rounded >= time.Second {
+		seconds := int64(rounded.Round(time.Second).Seconds())
+		return fmt.Sprintf("%ds", seconds)
+	}
+
+	return fmt.Sprintf("%dms", rounded.Milliseconds())
 }
