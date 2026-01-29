@@ -60,60 +60,19 @@ Example:
 			fmt.Println()
 			fmt.Printf("Processing %d paths\n", len(paths))
 			resultsCreatingChecksumFiles = []ChecksumFileCreationResult{}
-			processCreatePaths(paths, &resultsCreatingChecksumFiles)
+			processPaths(paths, &errorsCreatingChecksumFiles, func(filePath string) error {
+				return handleChecksumFileCreation(filePath, &resultsCreatingChecksumFiles)
+			})
 			printResultsCreatingChecksumFiles(resultsCreatingChecksumFiles)
 		} else {
 			for _, path := range paths {
-				argFileInfo, err := os.Stat(path)
-				if err != nil {
-					errorsCreatingChecksumFiles = append(errorsCreatingChecksumFiles, err)
-					continue
-				}
-
 				fmt.Println()
 				fmt.Println("Processing", path)
 
 				resultsCreatingChecksumFiles = []ChecksumFileCreationResult{}
-
-				if argFileInfo.IsDir() {
-					directoryAbsolutePath, err := filepath.Abs(path)
-					if err != nil {
-						errorsCreatingChecksumFiles = append(errorsCreatingChecksumFiles, err)
-						return
-					}
-
-					if err := filepath.Walk(directoryAbsolutePath, func(filePath string, fileInfo os.FileInfo, err error) error {
-						if err != nil {
-							errorsCreatingChecksumFiles = append(errorsCreatingChecksumFiles, err)
-							fmt.Println("Error: ", err)
-							return err
-						}
-
-						if fileInfo.IsDir() {
-							return nil
-						}
-
-						return handleChecksumFileCreation(filePath, &resultsCreatingChecksumFiles)
-					}); err != nil {
-						errorsCreatingChecksumFiles = append(errorsCreatingChecksumFiles, err)
-						fmt.Println("Error: ", err)
-					}
-				} else {
-					fileAbsolutePath, err := filepath.Abs(path)
-					if err != nil {
-						errorsCreatingChecksumFiles = append(errorsCreatingChecksumFiles, err)
-						continue
-					}
-
-					ext := filepath.Ext(fileAbsolutePath)
-					if ext == ".sha512" {
-						isChecksumFileError := errors.New(fileAbsolutePath + " is a checksum file.")
-						errorsCreatingChecksumFiles = append(errorsCreatingChecksumFiles, isChecksumFileError)
-						continue
-					}
-
-					handleChecksumFileCreation(path, &resultsCreatingChecksumFiles)
-				}
+				processPaths([]string{path}, &errorsCreatingChecksumFiles, func(filePath string) error {
+					return handleChecksumFileCreation(filePath, &resultsCreatingChecksumFiles)
+				})
 
 				printResultsCreatingChecksumFiles(resultsCreatingChecksumFiles)
 			}
@@ -121,56 +80,6 @@ Example:
 
 		printErrorsCreatingChecksumFiles()
 	},
-}
-
-func processCreatePaths(paths []string, results *[]ChecksumFileCreationResult) {
-	for _, path := range paths {
-		argFileInfo, err := os.Stat(path)
-		if err != nil {
-			errorsCreatingChecksumFiles = append(errorsCreatingChecksumFiles, err)
-			continue
-		}
-
-		if argFileInfo.IsDir() {
-			directoryAbsolutePath, err := filepath.Abs(path)
-			if err != nil {
-				errorsCreatingChecksumFiles = append(errorsCreatingChecksumFiles, err)
-				continue
-			}
-
-			if err := filepath.Walk(directoryAbsolutePath, func(filePath string, fileInfo os.FileInfo, err error) error {
-				if err != nil {
-					errorsCreatingChecksumFiles = append(errorsCreatingChecksumFiles, err)
-					fmt.Println("Error: ", err)
-					return err
-				}
-
-				if fileInfo.IsDir() {
-					return nil
-				}
-
-				return handleChecksumFileCreation(filePath, results)
-			}); err != nil {
-				errorsCreatingChecksumFiles = append(errorsCreatingChecksumFiles, err)
-				fmt.Println("Error: ", err)
-			}
-		} else {
-			fileAbsolutePath, err := filepath.Abs(path)
-			if err != nil {
-				errorsCreatingChecksumFiles = append(errorsCreatingChecksumFiles, err)
-				continue
-			}
-
-			ext := filepath.Ext(fileAbsolutePath)
-			if ext == ".sha512" {
-				isChecksumFileError := errors.New(fileAbsolutePath + " is a checksum file.")
-				errorsCreatingChecksumFiles = append(errorsCreatingChecksumFiles, isChecksumFileError)
-				continue
-			}
-
-			handleChecksumFileCreation(path, results)
-		}
-	}
 }
 
 func init() {

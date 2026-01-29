@@ -216,3 +216,56 @@ func expandArgs(args []string) ([]string, []error, bool) {
 func hasGlobMeta(path string) bool {
 	return strings.ContainsAny(path, "*?[")
 }
+
+func processPaths(paths []string, errorsList *[]error, handler func(string) error) {
+	for _, path := range paths {
+		argFileInfo, err := os.Stat(path)
+		if err != nil {
+			*errorsList = append(*errorsList, err)
+			continue
+		}
+
+		if argFileInfo.IsDir() {
+			directoryAbsolutePath, err := filepath.Abs(path)
+			if err != nil {
+				*errorsList = append(*errorsList, err)
+				continue
+			}
+
+			if err := filepath.Walk(directoryAbsolutePath, func(filePath string, fileInfo os.FileInfo, err error) error {
+				if err != nil {
+					*errorsList = append(*errorsList, err)
+					fmt.Println("Error: ", err)
+					return err
+				}
+
+				if fileInfo.IsDir() {
+					return nil
+				}
+
+				return handler(filePath)
+			}); err != nil {
+				*errorsList = append(*errorsList, err)
+				fmt.Println("Error: ", err)
+			}
+			continue
+		}
+
+		fileAbsolutePath, err := filepath.Abs(path)
+		if err != nil {
+			*errorsList = append(*errorsList, err)
+			continue
+		}
+
+		ext := filepath.Ext(fileAbsolutePath)
+		if ext == ".sha512" {
+			isChecksumFileError := fmt.Errorf("%s is a checksum file.", fileAbsolutePath)
+			*errorsList = append(*errorsList, isChecksumFileError)
+			continue
+		}
+
+		if err := handler(path); err != nil {
+			*errorsList = append(*errorsList, err)
+		}
+	}
+}
