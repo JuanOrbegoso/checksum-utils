@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -184,4 +185,34 @@ func formatDuration(d time.Duration) string {
 	}
 
 	return fmt.Sprintf("%dms", rounded.Milliseconds())
+}
+
+func expandArgs(args []string) ([]string, []error, bool) {
+	var expanded []string
+	var errs []error
+	hadGlob := false
+
+	for _, arg := range args {
+		if hasGlobMeta(arg) {
+			hadGlob = true
+			matches, err := filepath.Glob(arg)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			if len(matches) == 0 {
+				errs = append(errs, fmt.Errorf("no matches for %q", arg))
+				continue
+			}
+			expanded = append(expanded, matches...)
+			continue
+		}
+		expanded = append(expanded, arg)
+	}
+
+	return expanded, errs, hadGlob
+}
+
+func hasGlobMeta(path string) bool {
+	return strings.ContainsAny(path, "*?[")
 }
