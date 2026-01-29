@@ -174,12 +174,14 @@ func checkChecksumFile(fileAbsolutePath string) ChecksumFileVerificationResult {
 		}
 		return ChecksumFileVerificationResult{Path: fileAbsolutePath, Status: CheckingFailed, Error: err}
 	}
+	defer file.Close()
 
 	if _, err := os.Stat(fileAbsolutePath + ".sha512"); err != nil {
-		return ChecksumFileVerificationResult{Path: fileAbsolutePath, Status: NotFound, Error: nil}
+		if errors.Is(err, os.ErrNotExist) {
+			return ChecksumFileVerificationResult{Path: fileAbsolutePath, Status: NotFound, Error: nil}
+		}
+		return ChecksumFileVerificationResult{Path: fileAbsolutePath, Status: CheckingFailed, Error: err}
 	}
-
-	defer file.Close()
 
 	// Create a new SHA512 hash object
 	hash := sha512.New()
@@ -200,7 +202,7 @@ func checkChecksumFile(fileAbsolutePath string) ChecksumFileVerificationResult {
 		return ChecksumFileVerificationResult{Path: fileAbsolutePath, Status: CheckingFailed, Error: err}
 	}
 
-	checksumFileContentString := string(checksumFileContentByteArray)
+	checksumFileContentString := strings.TrimSpace(string(checksumFileContentByteArray))
 
 	if strings.EqualFold(hexFileChecksum, checksumFileContentString) {
 		return ChecksumFileVerificationResult{Path: fileAbsolutePath, Status: Match, Error: nil}
