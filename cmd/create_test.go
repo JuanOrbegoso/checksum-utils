@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -82,6 +83,10 @@ func TestCreateChecksumFile_MissingFile(t *testing.T) {
 }
 
 func TestCreateChecksumFile_LockedFile(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("permission bits are not enforced on Windows")
+	}
+
 	tempDir := t.TempDir()
 	filePath := filepath.Join(tempDir, "locked.txt")
 	data := []byte("secret")
@@ -97,11 +102,63 @@ func TestCreateChecksumFile_LockedFile(t *testing.T) {
 		_ = os.Chmod(filePath, 0o600)
 	}()
 
+	if f, err := os.Open(filePath); err == nil {
+		_ = f.Close()
+		t.Skip("unable to enforce read permissions in this environment")
+	}
+
 	result := createChecksumFile(filePath)
 	if result.Status != LockedCreation {
 		t.Fatalf("expected status %s, got %s", LockedCreation, result.Status)
 	}
 	if result.Error == nil {
 		t.Fatalf("expected error, got nil")
+	}
+}
+
+func TestCreateChecksumFile_ExistingChecksumUnreadableDataFile(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("permission bits are not enforced on Windows")
+	}
+
+	tempDir := t.TempDir()
+	filePath := filepath.Join(tempDir, "data.txt")
+
+	if err := os.WriteFile(filePath, []byte("data"), 0o600); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	checksumPath := filePath + ".sha512"
+	original := []byte("existing")
+	if err := os.WriteFile(checksumPath, original, 0o600); err != nil {
+		t.Fatalf("write checksum file: %v", err)
+	}
+
+	if err := os.Chmod(filePath, 0o000); err != nil {
+		t.Fatalf("chmod file: %v", err)
+	}
+	defer func() {
+		_ = os.Chmod(filePath, 0o600)
+	}()
+
+	if f, err := os.Open(filePath); err == nil {
+		_ = f.Close()
+		t.Skip("unable to enforce read permissions in this environment")
+	}
+
+	result := createChecksumFile(filePath)
+	if result.Status != Existing {
+		t.Fatalf("expected status %s, got %s", Existing, result.Status)
+	}
+	if result.Error != nil {
+		t.Fatalf("unexpected error: %v", result.Error)
+	}
+
+	checksumBytes, err := os.ReadFile(checksumPath)
+	if err != nil {
+		t.Fatalf("read checksum file: %v", err)
+	}
+	if string(checksumBytes) != string(original) {
+		t.Fatalf("checksum file should not be overwritten")
 	}
 }

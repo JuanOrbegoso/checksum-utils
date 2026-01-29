@@ -164,6 +164,13 @@ func handleChecksumFileCreation(filePath string, results *[]ChecksumFileCreation
 }
 
 func createChecksumFile(fileAbsolutePath string) ChecksumFileCreationResult {
+	// Checksum file
+	if _, err := os.Stat(fileAbsolutePath + ".sha512"); err == nil {
+		return ChecksumFileCreationResult{Path: fileAbsolutePath, Status: Existing, Error: nil}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return ChecksumFileCreationResult{Path: fileAbsolutePath, Status: Failed, Error: err}
+	}
+
 	file, err := os.Open(fileAbsolutePath)
 	if err != nil {
 		if os.IsPermission(err) {
@@ -174,41 +181,34 @@ func createChecksumFile(fileAbsolutePath string) ChecksumFileCreationResult {
 
 	defer file.Close()
 
-	// Checksum file
-	if _, err := os.Stat(fileAbsolutePath + ".sha512"); err == nil {
-		return ChecksumFileCreationResult{Path: fileAbsolutePath, Status: Existing, Error: nil}
-	} else if errors.Is(err, os.ErrNotExist) {
-		// Create a new SHA512 hash object
-		hash := sha512.New()
+	// Create a new SHA512 hash object
+	hash := sha512.New()
 
-		// Copy the file content to the hash object
-		if _, err := io.Copy(hash, file); err != nil {
-			return ChecksumFileCreationResult{Path: fileAbsolutePath, Status: Failed, Error: err}
-		}
-
-		// Get the checksum as a byte slice
-		fileChecksum := hash.Sum(nil)
-
-		// Convert the checksum to a hexadecimal string
-		hexFileChecksum := hex.EncodeToString(fileChecksum)
-
-		// Create checksum file
-		checksumFile, err := os.Create(fileAbsolutePath + ".sha512")
-		if err != nil {
-			return ChecksumFileCreationResult{Path: fileAbsolutePath, Status: Failed, Error: err}
-		}
-
-		defer checksumFile.Close()
-
-		// Write the file checksum on the checksum file
-		if _, err := checksumFile.WriteString(hexFileChecksum); err != nil {
-			return ChecksumFileCreationResult{Path: fileAbsolutePath, Status: Failed, Error: err}
-		}
-
-		return ChecksumFileCreationResult{Path: fileAbsolutePath, Status: Created, Error: nil}
-	} else {
+	// Copy the file content to the hash object
+	if _, err := io.Copy(hash, file); err != nil {
 		return ChecksumFileCreationResult{Path: fileAbsolutePath, Status: Failed, Error: err}
 	}
+
+	// Get the checksum as a byte slice
+	fileChecksum := hash.Sum(nil)
+
+	// Convert the checksum to a hexadecimal string
+	hexFileChecksum := hex.EncodeToString(fileChecksum)
+
+	// Create checksum file
+	checksumFile, err := os.Create(fileAbsolutePath + ".sha512")
+	if err != nil {
+		return ChecksumFileCreationResult{Path: fileAbsolutePath, Status: Failed, Error: err}
+	}
+
+	defer checksumFile.Close()
+
+	// Write the file checksum on the checksum file
+	if _, err := checksumFile.WriteString(hexFileChecksum); err != nil {
+		return ChecksumFileCreationResult{Path: fileAbsolutePath, Status: Failed, Error: err}
+	}
+
+	return ChecksumFileCreationResult{Path: fileAbsolutePath, Status: Created, Error: nil}
 }
 
 func printResultsCreatingChecksumFiles(results []ChecksumFileCreationResult) {
