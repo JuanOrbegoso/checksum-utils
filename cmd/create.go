@@ -161,7 +161,7 @@ func handleChecksumFileCreation(filePath string, results *[]ChecksumFileCreation
 		fmt.Print("❌")
 	}
 
-	if result.Status != Existing {
+	if result.Status != Existing && result.Status != LockedCreation {
 		fmt.Printf(" (%s)", formatDuration(elapsed))
 	}
 	fmt.Println()

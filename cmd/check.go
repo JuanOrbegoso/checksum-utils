@@ -164,7 +164,7 @@ func handleChecksumFileVerification(filePath string, results *[]ChecksumFileVeri
 		fmt.Print("❌")
 	}
 
-	if result.Status != NotFound {
+	if result.Status != NotFound && result.Status != LockedVerification {
 		fmt.Printf(" (%s)", formatDuration(elapsed))
 	}
 	fmt.Println()
