@@ -113,10 +113,10 @@ func init() {
 type ChecksumFileVerificationStatus string
 
 const (
-	Match          ChecksumFileVerificationStatus = "Match"
-	NotMatch       ChecksumFileVerificationStatus = "NotMatch"
-	NotFound       ChecksumFileVerificationStatus = "NotFound"
-	CheckingFailed ChecksumFileVerificationStatus = "CheckingFailed"
+	Match              ChecksumFileVerificationStatus = "Match"
+	NotMatch           ChecksumFileVerificationStatus = "NotMatch"
+	NotFound           ChecksumFileVerificationStatus = "NotFound"
+	CheckingFailed     ChecksumFileVerificationStatus = "CheckingFailed"
 	LockedVerification ChecksumFileVerificationStatus = "Locked"
 )
 
@@ -137,25 +137,31 @@ func handleChecksumFileVerification(filePath string, results *[]ChecksumFileVeri
 		return nil
 	}
 
-	fmt.Print("- ", fileAbsolutePath)
-
+	prefix := fmt.Sprintf("- %s ", fileAbsolutePath)
+	spinner := startProgress(prefix)
 	start := time.Now()
 	result := checkChecksumFile(fileAbsolutePath)
 	elapsed := time.Since(start)
+	spinner.Stop()
 
 	*results = append(*results, result)
 
+	if spinner.Enabled() {
+		clearProgressLine(prefix)
+	} else {
+		fmt.Print(prefix)
+	}
 	switch result.Status {
 	case Match:
-		fmt.Print(" ✅")
+		fmt.Print("✅")
 	case NotMatch:
-		fmt.Print(" ⚠️")
+		fmt.Print("⚠️")
 	case NotFound:
-		fmt.Print(" 👻")
+		fmt.Print("👻")
 	case LockedVerification:
-		fmt.Print(" 🔒")
+		fmt.Print("🔒")
 	case CheckingFailed:
-		fmt.Print(" ❌")
+		fmt.Print("❌")
 	}
 
 	if result.Status != NotFound {

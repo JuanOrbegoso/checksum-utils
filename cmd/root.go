@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -28,6 +30,8 @@ import (
 var (
 	version = "v0.0.10"
 )
+
+const progressBarWidth = 10
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -68,6 +72,92 @@ func init() {
 func printHeader() {
 	fmt.Println("Checksum-Utils", version)
 	fmt.Println("https://github.com/JuanOrbegoso/checksum-utils")
+}
+
+type progressSpinner struct {
+	done    chan struct{}
+	wg      sync.WaitGroup
+	enabled bool
+}
+
+func startProgress(prefix string) *progressSpinner {
+	if !isStdoutTTY() {
+		return &progressSpinner{enabled: false}
+	}
+
+	spinner := &progressSpinner{done: make(chan struct{})}
+	spinner.enabled = true
+	spinner.wg.Add(1)
+
+	go func() {
+		defer spinner.wg.Done()
+		ticker := time.NewTicker(120 * time.Millisecond)
+		defer ticker.Stop()
+
+		position := 0
+		for {
+			select {
+			case <-spinner.done:
+				return
+			default:
+			}
+
+			fmt.Printf("\r%s%s", prefix, buildProgressFrame(position))
+			position = (position + 1) % (progressBarWidth + 1)
+
+			select {
+			case <-spinner.done:
+				return
+			case <-ticker.C:
+			}
+		}
+	}()
+
+	return spinner
+}
+
+func (s *progressSpinner) Stop() {
+	if !s.enabled {
+		return
+	}
+	close(s.done)
+	s.wg.Wait()
+}
+
+func (s *progressSpinner) Enabled() bool {
+	return s.enabled
+}
+
+func buildProgressFrame(position int) string {
+	if position >= progressBarWidth {
+		return progressDoneBar()
+	}
+
+	var builder strings.Builder
+	builder.Grow(progressBarWidth + 2)
+	builder.WriteByte('[')
+	builder.WriteString(strings.Repeat("=", position))
+	builder.WriteByte('>')
+	builder.WriteString(strings.Repeat(" ", progressBarWidth-position-1))
+	builder.WriteByte(']')
+	return builder.String()
+}
+
+func progressDoneBar() string {
+	return "[" + strings.Repeat("=", progressBarWidth) + "]"
+}
+
+func clearProgressLine(prefix string) {
+	barLen := progressBarWidth + 2
+	fmt.Printf("\r%s%s\r%s", prefix, strings.Repeat(" ", barLen), prefix)
+}
+
+func isStdoutTTY() bool {
+	info, err := os.Stdout.Stat()
+	if err != nil {
+		return false
+	}
+	return (info.Mode() & os.ModeCharDevice) != 0
 }
 
 func formatDuration(d time.Duration) string {

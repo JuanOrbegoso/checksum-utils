@@ -113,9 +113,9 @@ func init() {
 type ChecksumFileCreationStatus string
 
 const (
-	Created  ChecksumFileCreationStatus = "Created"
-	Existing ChecksumFileCreationStatus = "Existing"
-	Failed   ChecksumFileCreationStatus = "Failed"
+	Created        ChecksumFileCreationStatus = "Created"
+	Existing       ChecksumFileCreationStatus = "Existing"
+	Failed         ChecksumFileCreationStatus = "Failed"
 	LockedCreation ChecksumFileCreationStatus = "Locked"
 )
 
@@ -136,23 +136,29 @@ func handleChecksumFileCreation(filePath string, results *[]ChecksumFileCreation
 		return nil
 	}
 
-	fmt.Print("- ", fileAbsolutePath)
-
+	prefix := fmt.Sprintf("- %s ", fileAbsolutePath)
+	spinner := startProgress(prefix)
 	start := time.Now()
 	result := createChecksumFile(fileAbsolutePath)
 	elapsed := time.Since(start)
+	spinner.Stop()
 
 	*results = append(*results, result)
 
+	if spinner.Enabled() {
+		clearProgressLine(prefix)
+	} else {
+		fmt.Print(prefix)
+	}
 	switch result.Status {
 	case Created:
-		fmt.Print(" ✅")
+		fmt.Print("✅")
 	case Existing:
-		fmt.Print(" ⏭️")
+		fmt.Print("⏭️")
 	case LockedCreation:
-		fmt.Print(" 🔒")
+		fmt.Print("🔒")
 	case Failed:
-		fmt.Print(" ❌")
+		fmt.Print("❌")
 	}
 
 	if result.Status != Existing {
