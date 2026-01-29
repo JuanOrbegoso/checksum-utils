@@ -19,7 +19,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/JMOrbegoso/checksum-utils/cmd"
+	"github.com/JuanOrbegoso/checksum-utils/cmd"
 )
 
 func main() {

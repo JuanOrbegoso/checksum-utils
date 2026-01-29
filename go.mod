@@ -1,4 +1,4 @@
-module github.com/JMOrbegoso/checksum-utils
+module github.com/JuanOrbegoso/checksum-utils
 
 go 1.24.0
 
