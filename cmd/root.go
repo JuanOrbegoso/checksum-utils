@@ -1,5 +1,5 @@
 /*
-Copyright © 2025 JM Orbegoso
+Copyright © 2025 Juan Orbegoso
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -66,5 +66,5 @@ func init() {
 
 func printHeader() {
 	fmt.Println("Checksum-Utils", version)
-	fmt.Println("https://github.com/JMOrbegoso/checksum-utils")
+	fmt.Println("https://github.com/JuanOrbegoso/checksum-utils")
 }

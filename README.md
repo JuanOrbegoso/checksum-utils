@@ -16,7 +16,7 @@ Checksum Utils is a CLI tool to manage the checksum of your files, focused on NA
 
 ## 💻 Install
 
-1. Download the latest release from the [releases page](https://github.com/JMOrbegoso/checksum-utils/releases/latest) according to your operating system.
+1. Download the latest release from the [releases page](https://github.com/JuanOrbegoso/checksum-utils/releases/latest) according to your operating system.
 
 2. Move and rename the downloaded executable to your PATH, so you can use it from anywhere.
 
@@ -123,7 +123,7 @@ You must have [golang](https://go.dev/doc/install) installed on your system.
 1. Clone the project:
 
    ```bash
-   git clone https://github.com/JMOrbegoso/checksum-utils.git
+   git clone https://github.com/JuanOrbegoso/checksum-utils.git
    ```
 
 2. Install Go dependencies:
@@ -140,9 +140,9 @@ You must have [golang](https://go.dev/doc/install) installed on your system.
 
 ## 🧑‍💻 Author
 
-**JMOrbegoso:**
+**Juan Orbegoso:**
 
-- Website: [www.jmorbegoso.dev](https://www.jmorbegoso.dev)
-- Blog: [blog.jmorbegoso.dev](https://blog.jmorbegoso.dev)
-- Github: [@JMOrbegoso](https://github.com/JMOrbegoso/)
-- LinkedIn: [@jmorbegosodev](https://www.linkedin.com/in/jmorbegosodev/)
+- Website: [www.juan-orbegoso.dev](https://www.juan-orbegoso.dev)
+- Blog: [blog.juan-orbegoso.dev](https://blog.juan-orbegoso.dev)
+- Github: [@JuanOrbegoso](https://github.com/JuanOrbegoso)
+- LinkedIn: [@juan-orbegoso](https://www.linkedin.com/in/juan-orbegoso)
