@@ -226,6 +226,13 @@ func printResultsCreatingChecksumFiles(results []ChecksumFileCreationResult) {
 
 	if lockedChecksumFilesQuantity > 0 {
 		fmt.Println("🔒 :", lockedChecksumFilesQuantity, "files could not be read due to permissions")
+		for _, result := range results {
+			if result.Status != LockedCreation {
+				continue
+			}
+			fmt.Print("- ", result.Path)
+			fmt.Println()
+		}
 	}
 
 	if len(failedResults) > 0 {
