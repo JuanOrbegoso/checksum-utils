@@ -16,6 +16,7 @@ limitations under the License.
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/signal"
@@ -161,6 +162,38 @@ func isStdoutTTY() bool {
 	return (info.Mode() & os.ModeCharDevice) != 0
 }
 
+func isStdinTTY() bool {
+	info, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+	return (info.Mode() & os.ModeCharDevice) != 0
+}
+
+func readPathsFromStdin() ([]string, error) {
+	if isStdinTTY() {
+		return nil, nil
+	}
+
+	var paths []string
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+		if strings.HasSuffix(line, ".sha512") {
+			continue
+		}
+		paths = append(paths, line)
+	}
+	if err := scanner.Err(); err != nil {
+		return paths, err
+	}
+
+	return paths, nil
+}
+
 func formatDuration(d time.Duration) string {
 	rounded := d.Round(time.Millisecond)
 
@@ -211,6 +244,28 @@ func expandArgs(args []string) ([]string, []error, bool) {
 	}
 
 	return expanded, errs, hadGlob
+}
+
+func gatherPaths(args []string) ([]string, []error, bool) {
+	paths, errs, hadGlob := expandArgs(args)
+	var readErr error
+
+	if len(args) == 0 || !isStdinTTY() {
+		stdinPaths, err := readPathsFromStdin()
+		if err != nil {
+			readErr = err
+		}
+		if len(stdinPaths) > 0 {
+			paths = append(paths, stdinPaths...)
+			hadGlob = true
+		}
+	}
+
+	if readErr != nil {
+		errs = append(errs, readErr)
+	}
+
+	return paths, errs, hadGlob
 }
 
 func hasGlobMeta(path string) bool {

@@ -43,11 +43,11 @@ Example:
 	checksum-utils create ~/documents
   checksum-utils create /mnt/external-disk/budget.pdf
 `,
-	Args: cobra.MinimumNArgs(1),
+	Args: cobra.MinimumNArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		printHeader()
 
-		paths, expandErrors, hadGlob := expandArgs(args)
+		paths, expandErrors, hadGlob := gatherPaths(args)
 		for _, err := range expandErrors {
 			errorsCreatingChecksumFiles = append(errorsCreatingChecksumFiles, err)
 		}
