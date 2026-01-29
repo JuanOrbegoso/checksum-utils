@@ -80,3 +80,28 @@ func TestCreateChecksumFile_MissingFile(t *testing.T) {
 		t.Fatalf("expected error, got nil")
 	}
 }
+
+func TestCreateChecksumFile_LockedFile(t *testing.T) {
+	tempDir := t.TempDir()
+	filePath := filepath.Join(tempDir, "locked.txt")
+	data := []byte("secret")
+
+	if err := os.WriteFile(filePath, data, 0o600); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	if err := os.Chmod(filePath, 0o000); err != nil {
+		t.Fatalf("chmod file: %v", err)
+	}
+	defer func() {
+		_ = os.Chmod(filePath, 0o600)
+	}()
+
+	result := createChecksumFile(filePath)
+	if result.Status != LockedCreation {
+		t.Fatalf("expected status %s, got %s", LockedCreation, result.Status)
+	}
+	if result.Error == nil {
+		t.Fatalf("expected error, got nil")
+	}
+}

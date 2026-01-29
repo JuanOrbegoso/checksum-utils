@@ -116,6 +116,7 @@ const (
 	Created  ChecksumFileCreationStatus = "Created"
 	Existing ChecksumFileCreationStatus = "Existing"
 	Failed   ChecksumFileCreationStatus = "Failed"
+	LockedCreation ChecksumFileCreationStatus = "Locked"
 )
 
 type ChecksumFileCreationResult struct {
@@ -148,6 +149,8 @@ func handleChecksumFileCreation(filePath string, results *[]ChecksumFileCreation
 		fmt.Print(" ✅")
 	case Existing:
 		fmt.Print(" ⏭️")
+	case LockedCreation:
+		fmt.Print(" 🔒")
 	case Failed:
 		fmt.Print(" ❌")
 	}
@@ -163,6 +166,9 @@ func handleChecksumFileCreation(filePath string, results *[]ChecksumFileCreation
 func createChecksumFile(fileAbsolutePath string) ChecksumFileCreationResult {
 	file, err := os.Open(fileAbsolutePath)
 	if err != nil {
+		if os.IsPermission(err) {
+			return ChecksumFileCreationResult{Path: fileAbsolutePath, Status: LockedCreation, Error: err}
+		}
 		return ChecksumFileCreationResult{Path: fileAbsolutePath, Status: Failed, Error: err}
 	}
 
@@ -212,6 +218,7 @@ func printResultsCreatingChecksumFiles(results []ChecksumFileCreationResult) {
 
 	var createdChecksumFilesQuantity = 0
 	var existingChecksumFilesQuantity = 0
+	var lockedChecksumFilesQuantity = 0
 	var failedResults []ChecksumFileCreationResult
 
 	for _, result := range results {
@@ -220,6 +227,8 @@ func printResultsCreatingChecksumFiles(results []ChecksumFileCreationResult) {
 			createdChecksumFilesQuantity++
 		case Existing:
 			existingChecksumFilesQuantity++
+		case LockedCreation:
+			lockedChecksumFilesQuantity++
 		case Failed:
 			failedResults = append(failedResults, result)
 		}
@@ -231,6 +240,10 @@ func printResultsCreatingChecksumFiles(results []ChecksumFileCreationResult) {
 
 	if existingChecksumFilesQuantity > 0 {
 		fmt.Println("⏭️ :", existingChecksumFilesQuantity, "files already have an existing checksum file")
+	}
+
+	if lockedChecksumFilesQuantity > 0 {
+		fmt.Println("🔒 :", lockedChecksumFilesQuantity, "files could not be read due to permissions")
 	}
 
 	if len(failedResults) > 0 {

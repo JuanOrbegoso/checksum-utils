@@ -117,6 +117,7 @@ const (
 	NotMatch       ChecksumFileVerificationStatus = "NotMatch"
 	NotFound       ChecksumFileVerificationStatus = "NotFound"
 	CheckingFailed ChecksumFileVerificationStatus = "CheckingFailed"
+	LockedVerification ChecksumFileVerificationStatus = "Locked"
 )
 
 type ChecksumFileVerificationResult struct {
@@ -151,6 +152,8 @@ func handleChecksumFileVerification(filePath string, results *[]ChecksumFileVeri
 		fmt.Print(" ⚠️")
 	case NotFound:
 		fmt.Print(" 👻")
+	case LockedVerification:
+		fmt.Print(" 🔒")
 	case CheckingFailed:
 		fmt.Print(" ❌")
 	}
@@ -166,6 +169,9 @@ func handleChecksumFileVerification(filePath string, results *[]ChecksumFileVeri
 func checkChecksumFile(fileAbsolutePath string) ChecksumFileVerificationResult {
 	file, err := os.Open(fileAbsolutePath)
 	if err != nil {
+		if os.IsPermission(err) {
+			return ChecksumFileVerificationResult{Path: fileAbsolutePath, Status: LockedVerification, Error: err}
+		}
 		return ChecksumFileVerificationResult{Path: fileAbsolutePath, Status: CheckingFailed, Error: err}
 	}
 
@@ -211,6 +217,7 @@ func printResultsCheckingChecksumFiles(results []ChecksumFileVerificationResult)
 	var matchedChecksumFilesQuantity = 0
 	var notMatchedResults []ChecksumFileVerificationResult
 	var notExistingResults []ChecksumFileVerificationResult
+	var lockedResults []ChecksumFileVerificationResult
 	var failedResults []ChecksumFileVerificationResult
 
 	for _, result := range results {
@@ -221,6 +228,8 @@ func printResultsCheckingChecksumFiles(results []ChecksumFileVerificationResult)
 			notMatchedResults = append(notMatchedResults, result)
 		case NotFound:
 			notExistingResults = append(notExistingResults, result)
+		case LockedVerification:
+			lockedResults = append(lockedResults, result)
 		case CheckingFailed:
 			failedResults = append(failedResults, result)
 		}
@@ -242,6 +251,14 @@ func printResultsCheckingChecksumFiles(results []ChecksumFileVerificationResult)
 		fmt.Println("👻 :", len(notExistingResults), "files without a checksum file")
 		for _, notExistingResult := range notExistingResults {
 			fmt.Print("- ", notExistingResult.Path)
+			fmt.Println()
+		}
+	}
+
+	if len(lockedResults) > 0 {
+		fmt.Println("🔒 :", len(lockedResults), "files could not be read due to permissions")
+		for _, lockedResult := range lockedResults {
+			fmt.Print("- ", lockedResult.Path)
 			fmt.Println()
 		}
 	}

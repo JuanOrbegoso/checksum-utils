@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -75,6 +76,39 @@ func TestCheckChecksumFile_MissingFile(t *testing.T) {
 	result := checkChecksumFile(filepath.Join(t.TempDir(), "missing.txt"))
 	if result.Status != CheckingFailed {
 		t.Fatalf("expected status %s, got %s", CheckingFailed, result.Status)
+	}
+	if result.Error == nil {
+		t.Fatalf("expected error, got nil")
+	}
+}
+
+func TestCheckChecksumFile_LockedFile(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("permission bits are not enforced on Windows")
+	}
+
+	tempDir := t.TempDir()
+	filePath := filepath.Join(tempDir, "locked.txt")
+
+	if err := os.WriteFile(filePath, []byte("secret"), 0o600); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	if err := os.Chmod(filePath, 0o000); err != nil {
+		t.Fatalf("chmod file: %v", err)
+	}
+	defer func() {
+		_ = os.Chmod(filePath, 0o600)
+	}()
+
+	if f, err := os.Open(filePath); err == nil {
+		_ = f.Close()
+		t.Skip("unable to enforce read permissions in this environment")
+	}
+
+	result := checkChecksumFile(filePath)
+	if result.Status != LockedVerification {
+		t.Fatalf("expected status %s, got %s", LockedVerification, result.Status)
 	}
 	if result.Error == nil {
 		t.Fatalf("expected error, got nil")
